@@ -33,7 +33,7 @@ class JobStatus(Enum):
     queued = 3
 
 
-class Job(object):
+class Job:
 
     '''A task to be run by one of the MPI processes
 
@@ -67,7 +67,7 @@ class Job(object):
 
 # We cannot use "namedtuple" to define _RankedRequest, as it must be a
 # mutable object (the ``request`` field changes during lifetime).
-class _RankedRequest(object):
+class _RankedRequest:
     '''A request sent from some MPI process to another.
 
     The request is "ranked" because the rank of the sender is

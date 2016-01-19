@@ -42,10 +42,8 @@ class Job(object):
     '''
 
     def __init__(self,
-                 job,
                  status=JobStatus.queued,
                  running_time=None):
-        self.job = job
         self.status = status
         self.running_time = running_time
 
@@ -54,11 +52,15 @@ class Job(object):
                 .format(status=self.status,
                         running_time=self.running_time.total_seconds()))
 
-    def run(self):
+    def run(self, rank):
         '''Run the current job
 
         Reimplement this function in descendants to provide the
-        ability to actually do the tasks required by this job.'''
+        ability to actually do the tasks required by this job.
+
+        The ``rank`` parameter is equal to the rank of the job within
+        the MPI communicator being used by ``run_event_loop``.
+        '''
 
         pass
 
@@ -135,7 +137,7 @@ def run_master(comm, rank, job_list, log_flag=False):
         log.info('the master has completed its operations.')
 
 
-def run_slave(comm, rank, slave_params):
+def run_slave(comm, rank):
     '''Event loop for a slave MPI process.
 
     This function must be called by all the MPI processes that are not
@@ -159,10 +161,31 @@ def run_slave(comm, rank, slave_params):
         # Do what the server told you
         start_time = datetime.now()
 
-        job.run(slave_params)
+        job.run(comm.rank)
 
         end_time = datetime.now()
         job.status = JobStatus.finished
         job.running_time = end_time - start_time
 
         last_job = job
+
+
+def run_event_loop(comm, job_list, master_rank=0, log_flag=False):
+    '''Run the main event loop.
+
+    The ``comm`` parameter specifies the MPI communicator to use
+    (usually ``COMM_WORLD``). The ``job_list`` parameter is a list of
+    ``Job`` objects that must be ran by the MPI processes. The
+    ``master_rank`` parameter specifies which MPI process will play
+    the master's part. The ``log_flag`` parameter, if ``True``, print
+    progress updates via the ``logging`` library.
+    '''
+
+    assert master_rank < comm.size, \
+      "the rank of the master must be less than the " \
+      "number of MPI processes actually running"
+
+    if comm.rank == master_rank:
+        run_master(comm, comm.rank, job_list, log_flag)
+    else:
+        run_slave(comm, comm.rank)

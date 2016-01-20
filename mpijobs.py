@@ -88,7 +88,7 @@ class _RankedRequest:
                         request=self.request))
 
 
-def run_master(comm, rank, job_list, log_flag=False):
+def run_master(comm, rank, job_list, log_flag=False, callback=None):
     '''Event loop for the master MPI process.
 
     This function must be called by the MPI process that will play the
@@ -101,6 +101,13 @@ def run_master(comm, rank, job_list, log_flag=False):
     causes log messages to be produced via calls to the ``logging``
     module.
 
+    If ``callback`` is not none, it must be a function accepting two
+    parameters. Every time a new job is submitted, the callback will be
+    called with its two arguments being (1) the list of pending jobs,
+    and (2) the list of jobs that have been completed. (The union of the
+    two lists gives the list of jobs in the ``job_list`` parameter,
+    *minus* the jobs that are currently running.)
+
     '''
 
     slave_requests = [_RankedRequest(rank=slave_rank,
@@ -111,6 +118,8 @@ def run_master(comm, rank, job_list, log_flag=False):
     pending_job_list = job_list
     results = []
     listening_slaves = len(slave_requests)
+    if callback:
+        callback(pending_job_list, results)
 
     if log_flag:
         log.info('{0} jobs to run'.format(len(pending_job_list)))
@@ -137,6 +146,9 @@ def run_master(comm, rank, job_list, log_flag=False):
                     log.info('job sent to process #{0}, still {1} jobs left'
                              .format(slave_requests[cur_idx].rank,
                                      len(pending_job_list)))
+
+                if callback:
+                    callback(pending_job_list, results)
 
                 # Be ready to get the next question from the slave
                 new_request = comm.irecv(dest=slave_requests[cur_idx].rank)
@@ -189,7 +201,7 @@ def run_slave(comm, rank):
         last_job = job
 
 
-def run_event_loop(comm, job_list, master_rank=0, log_flag=False):
+def run_event_loop(comm, job_list, master_rank=0, log_flag=False, callback=None):
     '''Run the main event loop.
 
     This function must be called by all the MPI process (both the
@@ -203,6 +215,13 @@ def run_event_loop(comm, job_list, master_rank=0, log_flag=False):
     ``master_rank`` parameter specifies which MPI process will play
     the master's part. The ``log_flag`` parameter, if ``True``, print
     progress updates via the ``logging`` library.
+
+    If ``callback`` is not none, it must be a function accepting two
+    parameters. Every time a new job is submitted, the callback will be
+    called with its two arguments being (1) the list of pending jobs,
+    and (2) the list of jobs that have been completed. (The union of the
+    two lists gives the list of jobs in the ``job_list`` parameter,
+    *minus* the jobs that are currently running.)
     '''
 
     assert master_rank < comm.size, \
@@ -210,7 +229,7 @@ def run_event_loop(comm, job_list, master_rank=0, log_flag=False):
       "number of MPI processes actually running"
 
     if comm.rank == master_rank:
-        results = run_master(comm, comm.rank, job_list, log_flag)
+        results = run_master(comm, comm.rank, job_list, log_flag, callback)
     else:
         run_slave(comm, comm.rank)
         results = None

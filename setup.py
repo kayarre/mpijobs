@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 setup(name='mpijobs',
-      version='0.1',
+      version='0.2',
       py_modules=['mpijobs'],
       install_requires=['mpi4py'],
       author='Maurizio Tomasi',

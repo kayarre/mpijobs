@@ -16,10 +16,8 @@ import mpijobs
 
 class MyJob(mpijobs.Job):
     def __init__(self,
-                 params,
-                 status=mpijobs.JobStatus.queued,
-                 running_time=None):
-        super().__init__(status, running_time)
+                 params):
+        super().__init__()
         self.params = params
         self.result_str = None
 

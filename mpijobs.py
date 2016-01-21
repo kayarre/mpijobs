@@ -111,7 +111,7 @@ def run_master(comm, rank, job_list, log_flag=False, callback=None):
     '''
 
     slave_requests = [_RankedRequest(rank=slave_rank,
-                                     request=comm.irecv(dest=slave_rank),
+                                     request=comm.irecv(None, slave_rank),
                                      job=None)
                       for slave_rank in range(1, comm.Get_size())]
 
@@ -151,7 +151,7 @@ def run_master(comm, rank, job_list, log_flag=False, callback=None):
                     callback(pending_job_list, results)
 
                 # Be ready to get the next question from the slave
-                new_request = comm.irecv(dest=slave_requests[cur_idx].rank)
+                new_request = comm.irecv(None, slave_requests[cur_idx].rank)
                 slave_requests[cur_idx].request = new_request
 
     # Close all pending communications

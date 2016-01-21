@@ -24,6 +24,8 @@ MPI processes, only ``n-1`` will actually run the jobs.
 
 '''
 
+from version import __version__
+
 from datetime import datetime, timedelta
 from enum import Enum
 from mpi4py import MPI

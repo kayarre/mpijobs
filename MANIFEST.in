@@ -1,4 +1,4 @@
 include COPYRIGHT.md
-include CHANGELOG
-include README.md
+include README.rst
+include mpijobs.pyi
 include example.py
